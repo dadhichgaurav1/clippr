@@ -11,8 +11,9 @@ const SELECTORS = {
     HEADER_IMAGE: 'img.css-9pa8cd',
     TWEET: 'article[data-testid="tweet"]',
     ACTION_BAR: 'div[role="group"]',
-    // Broad detection: look for "Article" label or article link
-    ARTICLE_INDICATOR: '[aria-label="Article"], a[href*="/article/"], a[href*="/i/articles/"]'
+    // Final refined detection: look for article cover image or specific label
+    ARTICLE_INDICATOR: '[data-testid="article-cover-image"], [aria-label="Article"]',
+    ARTICLE_LINK: 'a[href*="/article/"], a[href*="/i/articles/"]'
 };
 
 const ICONS = {
@@ -177,11 +178,14 @@ const observer = new MutationObserver(() => {
     // Feed Detection: Improved
     const tweets = document.querySelectorAll(SELECTORS.TWEET);
     tweets.forEach(tweet => {
-        const hasArticleIndicator = tweet.querySelector(SELECTORS.ARTICLE_INDICATOR);
-        const hasArticleLink = tweet.querySelector('a[href*="/article/"], a[href*="/i/articles/"]');
+        // Only proceed if it's an article tweet and hasn't been processed
+        if (!tweet.querySelector('.x-article-download-container')) {
+            const isArticle = tweet.querySelector(SELECTORS.ARTICLE_INDICATOR) ||
+                tweet.querySelector(SELECTORS.ARTICLE_LINK);
 
-        if (hasArticleIndicator || hasArticleLink) {
-            createButtons(tweet, true);
+            if (isArticle) {
+                createButtons(tweet, true);
+            }
         }
     });
 });
