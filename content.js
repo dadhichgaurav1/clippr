@@ -3,13 +3,21 @@
 console.log("X Article Downloader v2 loaded.");
 
 // --- Constants & Selectors ---
-const SELECTORS = {
-    ARTICLE_HEADER: 'h2[role="heading"]',
-    DRAFT_CONTENT: '.public-DraftEditor-content',
-    DRAFT_BLOCK: '.public-DraftStyleDefault-block',
-    TITLE: 'div.css-175oi2r.r-13qz1uu',
-    CARD_WRAPPER: '[data-testid="card.wrapper"]',
-    FOCUS_MODE: 'a[aria-label="Focus mode"]'
+const CONFIG = {
+    x: {
+        ARTICLE_HEADER: 'h2[role="heading"]',
+        DRAFT_BLOCK: '.public-DraftStyleDefault-block',
+        TITLE: 'div.css-175oi2r.r-13qz1uu',
+        CARD_WRAPPER: '[data-testid="card.wrapper"]',
+        FOCUS_MODE: 'a[aria-label="Focus mode"]',
+        PRIMARY_COLUMN: '[data-testid="primaryColumn"]'
+    },
+    linkedin: {
+        TITLE: 'h1.pulse-title, h1.main-title',
+        BODY_CONTENT: '.article-main-card__content, article section, .main-article',
+        COVER_IMAGE: '.article-main-card__image-container img, .cover-img, img[alt="Cover image"]',
+        INJECTION_ANCHOR: 'h1.pulse-title, h1.main-title'
+    }
 };
 
 const ICONS = {
@@ -35,44 +43,86 @@ async function getBase64Image(url) {
     }
 }
 
+function getPlatform() {
+    if (window.location.host.includes('x.com')) return 'x';
+    if (window.location.host.includes('linkedin.com')) return 'linkedin';
+    return null;
+}
+
 function isArticlePage() {
-    const header = Array.from(document.querySelectorAll(SELECTORS.ARTICLE_HEADER))
-        .find(el => el.innerText === "Article" || el.innerText === "Articles");
-    return !!header || window.location.pathname.includes('/article/');
+    const platform = getPlatform();
+    if (platform === 'x') {
+        const header = Array.from(document.querySelectorAll(CONFIG.x.ARTICLE_HEADER))
+            .find(el => el.innerText === "Article" || el.innerText === "Articles");
+        return !!header || window.location.pathname.includes('/article/');
+    }
+    if (platform === 'linkedin') {
+        return window.location.pathname.includes('/pulse/');
+    }
+    return false;
 }
 
 // --- Content Extraction ---
 
 async function extractArticleData() {
-    const title = document.querySelector(SELECTORS.TITLE)?.innerText || document.title.split(' / ')[0] || "X-Article";
+    const platform = getPlatform();
+    let title = "Article";
+    let bodyData = [];
+    let markdown = "";
 
-    // Header Image Detection: Usually the first large image or one before the draft editor
-    const allImages = Array.from(document.querySelectorAll('img[src*="pbs.twimg.com/media/"]'));
-    const headerImg = allImages[0]?.src.split('&')[0];
+    if (platform === 'x') {
+        title = document.querySelector(CONFIG.x.TITLE)?.innerText || document.title.split(' / ')[0] || "X-Article";
+        const allImages = Array.from(document.querySelectorAll('img[src*="pbs.twimg.com/media/"]'));
+        const headerImg = allImages[0]?.src.split('&')[0];
+        const contentBlocks = Array.from(document.querySelectorAll(CONFIG.x.DRAFT_BLOCK));
 
-    const contentBlocks = Array.from(document.querySelectorAll(SELECTORS.DRAFT_BLOCK));
-    let markdown = `# ${title}\n\n`;
-    if (headerImg) markdown += `![Header Image](${headerImg})\n\n`;
-
-    const bodyData = [];
-    if (headerImg) bodyData.push({ type: 'image', src: headerImg });
-
-    for (const block of contentBlocks) {
-        const text = block.innerText.trim();
-        if (text) {
-            markdown += `${text}\n\n`;
-            bodyData.push({ type: 'text', content: text });
+        markdown = `# ${title}\n\n`;
+        if (headerImg) {
+            markdown += `![Header Image](${headerImg})\n\n`;
+            bodyData.push({ type: 'image', src: headerImg });
         }
 
-        const images = Array.from(block.querySelectorAll('img')).concat(
-            Array.from(block.parentElement.querySelectorAll('img'))
-        ).filter(img => img.src.includes('pbs.twimg.com/media/'));
+        for (const block of contentBlocks) {
+            const text = block.innerText.trim();
+            if (text) {
+                markdown += `${text}\n\n`;
+                bodyData.push({ type: 'text', content: text });
+            }
+            const images = Array.from(block.querySelectorAll('img')).concat(
+                Array.from(block.parentElement.querySelectorAll('img'))
+            ).filter(img => img.src.includes('pbs.twimg.com/media/'));
+            const uniqueSrcs = [...new Set(images.map(img => img.src.split('&')[0]))];
+            for (const src of uniqueSrcs) {
+                if (src !== headerImg) {
+                    markdown += `![Image](${src})\n\n`;
+                    bodyData.push({ type: 'image', src: src });
+                }
+            }
+        }
+    } else if (platform === 'linkedin') {
+        title = document.querySelector(CONFIG.linkedin.TITLE)?.innerText || document.title.split(' | ')[0] || "LinkedIn-Article";
+        const coverImg = document.querySelector(CONFIG.linkedin.COVER_IMAGE)?.src;
+        const contentContainer = document.querySelector(CONFIG.linkedin.BODY_CONTENT);
 
-        const uniqueSrcs = [...new Set(images.map(img => img.src.split('&')[0]))];
-        for (const src of uniqueSrcs) {
-            if (src !== headerImg) {
-                markdown += `![Image](${src})\n\n`;
-                bodyData.push({ type: 'image', src: src });
+        markdown = `# ${title}\n\n`;
+        if (coverImg) {
+            markdown += `![Cover Image](${coverImg})\n\n`;
+            bodyData.push({ type: 'image', src: coverImg });
+        }
+
+        if (contentContainer) {
+            const elements = Array.from(contentContainer.querySelectorAll('p, h2, h3, li, img'));
+            for (const el of elements) {
+                if (el.tagName === 'P' || el.tagName.startsWith('H') || el.tagName === 'LI') {
+                    const text = el.innerText.trim();
+                    if (text) {
+                        markdown += (el.tagName === 'LI' ? `- ${text}` : text) + '\n\n';
+                        bodyData.push({ type: 'text', content: text });
+                    }
+                } else if (el.tagName === 'IMG' && el.src) {
+                    markdown += `![Image](${el.src})\n\n`;
+                    bodyData.push({ type: 'image', src: el.src });
+                }
             }
         }
     }
@@ -153,6 +203,7 @@ async function handleDownload(type) {
 function createButtons() {
     if (document.getElementById('x-article-download-container')) return;
 
+    const platform = getPlatform();
     const container = document.createElement('div');
     container.id = 'x-article-download-container';
     container.className = 'x-article-download-container';
@@ -172,37 +223,40 @@ function createButtons() {
     container.appendChild(mdBtn);
     container.appendChild(pdfBtn);
 
-    // Find insertion point: Right-side actions container in the header
-    // Use Focus Mode button as anchor to avoid sidebar account menu
-    const focusButton = document.querySelector(SELECTORS.FOCUS_MODE);
-    const rightContainer = focusButton ? focusButton.parentElement : null;
+    if (platform === 'x') {
+        const focusButton = document.querySelector(CONFIG.x.FOCUS_MODE);
+        const rightContainer = focusButton ? focusButton.parentElement : null;
+        const isPrimary = rightContainer && rightContainer.closest(CONFIG.x.PRIMARY_COLUMN);
 
-    // Ensure we are in the primary column (main article area)
-    const isPrimary = rightContainer && rightContainer.closest('[data-testid="primaryColumn"]');
-
-    if (isPrimary) {
-        // Prepend to stay to the left of the expand icon
-        rightContainer.prepend(container);
-    } else {
-        // Fallback to title area if specific container not found
-        const header = Array.from(document.querySelectorAll(SELECTORS.ARTICLE_HEADER))
-            .find(el => el.innerText === "Article" || el.innerText === "Articles");
-        if (header) {
-            header.parentElement.appendChild(container);
+        if (isPrimary) {
+            rightContainer.prepend(container);
+        } else {
+            const header = Array.from(document.querySelectorAll(CONFIG.x.ARTICLE_HEADER))
+                .find(el => el.innerText === "Article" || el.innerText === "Articles");
+            if (header) header.parentElement.appendChild(container);
+        }
+    } else if (platform === 'linkedin') {
+        const anchor = document.querySelector(CONFIG.linkedin.INJECTION_ANCHOR);
+        if (anchor) {
+            anchor.style.position = 'relative';
+            container.style.position = 'absolute';
+            container.style.right = '0';
+            container.style.top = '0';
+            anchor.appendChild(container);
         }
     }
 }
 
 function injectIntoFeed() {
-    const cards = document.querySelectorAll(SELECTORS.CARD_WRAPPER);
+    if (getPlatform() !== 'x') return;
+
+    const cards = document.querySelectorAll(CONFIG.x.CARD_WRAPPER);
     cards.forEach(card => {
         if (card.querySelector('.x-feed-article-btn')) return;
-
         const link = card.querySelector('a[href*="/article/"]');
         if (link) {
             const btnContainer = document.createElement('div');
             btnContainer.className = 'x-article-download-container x-feed-article-btn';
-
             const btn = document.createElement('button');
             btn.className = 'x-article-download-btn';
             btn.innerHTML = ICONS.MARKDOWN;
@@ -212,7 +266,6 @@ function injectIntoFeed() {
                 e.preventDefault();
                 window.location.href = link.href;
             };
-
             btnContainer.appendChild(btn);
             card.appendChild(btnContainer);
         }
