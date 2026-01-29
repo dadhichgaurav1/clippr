@@ -117,8 +117,10 @@ async function extractArticleData() {
         }
 
         if (contentContainer) {
+            console.log("LinkedIn: Content container found", contentContainer.tagName, contentContainer.className);
             // Select all text-bearing elements including blockquotes
             const elements = Array.from(contentContainer.querySelectorAll('p, h2, h3, h4, li, blockquote, figcaption'));
+            console.log("LinkedIn: Found", elements.length, "text elements");
             for (const el of elements) {
                 // Get text directly from element, handling nested spans
                 const text = el.innerText?.trim();
@@ -155,7 +157,16 @@ async function extractArticleData() {
 // --- Generation Logic ---
 
 async function handleDownload(type) {
+    console.log("handleDownload called with type:", type);
+
+    // Wait for page to stabilize on LinkedIn
+    if (window.location.host.includes('linkedin.com')) {
+        console.log("LinkedIn detected, waiting 500ms for DOM...");
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
     const { title, markdown, bodyData } = await extractArticleData();
+    console.log("Extracted:", { title, markdownLength: markdown.length, bodyItems: bodyData.length });
     const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
     if (type === 'markdown') {
