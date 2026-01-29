@@ -22,11 +22,12 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Feed: End of action bar */
+/* Feed: Inline with action bar items */
 .x-feed-article-btn {
-  margin-left: auto !important;
-  order: 99;
-  /* Put it at the very end */
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 8px;
 }
 
 .x-article-download-btn {

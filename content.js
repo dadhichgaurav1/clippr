@@ -11,23 +11,23 @@ const SELECTORS = {
     HEADER_IMAGE: 'img.css-9pa8cd',
     TWEET: 'article[data-testid="tweet"]',
     ACTION_BAR: 'div[role="group"]',
-    // Final refined detection: look for article cover image or specific label
-    ARTICLE_INDICATOR: '[data-testid="article-cover-image"], [aria-label="Article"]',
+    // Targeted indicator from user feedback
+    ARTICLE_INDICATOR: '[aria-label="Article cover image"], [data-testid="article-cover-image"], [aria-label="Article"]',
     ARTICLE_LINK: 'a[href*="/article/"], a[href*="/i/articles/"]'
 };
 
 const ICONS = {
     MARKDOWN: `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <text x="12" y="18" font-family="Arial" font-size="6" font-weight="bold" text-anchor="middle" fill="currentColor">.md</text>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" fill="rgba(128,128,128,0.1)" stroke="currentColor" stroke-width="2"/>
+            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2"/>
+            <text x="12" y="17" font-family="monospace" font-size="5" font-weight="bold" text-anchor="middle" fill="currentColor">.md</text>
         </svg>`,
     PDF: `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <text x="12" y="18" font-family="Arial" font-size="6" font-weight="bold" text-anchor="middle" fill="currentColor">.pdf</text>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" fill="rgba(128,128,128,0.1)" stroke="currentColor" stroke-width="2"/>
+            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2"/>
+            <text x="12" y="17" font-family="monospace" font-size="5" font-weight="bold" text-anchor="middle" fill="currentColor">.pdf</text>
         </svg>`
 };
 
@@ -150,20 +150,23 @@ function createButtons(parentElement, isFeed = false) {
         if (articleLink) {
             mdBtn.onclick = (e) => { e.stopPropagation(); e.preventDefault(); window.open(articleLink + '#download=md', '_blank'); };
             pdfBtn.onclick = (e) => { e.stopPropagation(); e.preventDefault(); window.open(articleLink + '#download=pdf', '_blank'); };
-            // Inject into the action bar
-            const actionBar = parentElement.querySelector(SELECTORS.ACTION_BAR);
-            if (actionBar) {
-                container.appendChild(mdBtn);
-                container.appendChild(pdfBtn);
-                actionBar.appendChild(container);
-            }
+        } else {
+            // If no direct link found in card, don't inject
+            return;
+        }
+
+        const actionBar = parentElement.querySelector(SELECTORS.ACTION_BAR);
+        if (actionBar) {
+            container.appendChild(mdBtn);
+            container.appendChild(pdfBtn);
+            actionBar.appendChild(container);
         }
     } else {
         mdBtn.onclick = (e) => { e.stopPropagation(); handleDownload('markdown'); };
         pdfBtn.onclick = (e) => { e.stopPropagation(); handleDownload('pdf'); };
         container.appendChild(mdBtn);
         container.appendChild(pdfBtn);
-        document.body.appendChild(container);
+        document.body.appendChild(container); // Article page uses fixed positioning
     }
 }
 
@@ -175,10 +178,9 @@ const observer = new MutationObserver(() => {
         createButtons(document.body, false);
     }
 
-    // Feed Detection: Improved
+    // Feed Detection: Improved using user-provided indicators
     const tweets = document.querySelectorAll(SELECTORS.TWEET);
     tweets.forEach(tweet => {
-        // Only proceed if it's an article tweet and hasn't been processed
         if (!tweet.querySelector('.x-article-download-container')) {
             const isArticle = tweet.querySelector(SELECTORS.ARTICLE_INDICATOR) ||
                 tweet.querySelector(SELECTORS.ARTICLE_LINK);
