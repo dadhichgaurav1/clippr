@@ -20,6 +20,8 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    z-index: 1000;
+    /* Ensure visibility on LinkedIn */
 }
 
 .x-article-download-btn:hover {

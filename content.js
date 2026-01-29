@@ -13,10 +13,10 @@ const CONFIG = {
         PRIMARY_COLUMN: '[data-testid="primaryColumn"]'
     },
     linkedin: {
-        TITLE: 'h1.pulse-title, h1.main-title',
-        BODY_CONTENT: '.article-main-card__content, article section, .main-article',
-        COVER_IMAGE: '.article-main-card__image-container img, .cover-img, img[alt="Cover image"]',
-        INJECTION_ANCHOR: 'h1.pulse-title, h1.main-title'
+        TITLE: 'h1.pulse-title, h1.main-title, .reader-article-header__title',
+        BODY_CONTENT: '.article-main-card__content, article section, .main-article, .reader-article-content',
+        COVER_IMAGE: '.article-main-card__image-container img, .cover-img, img[alt="Cover image"], .reader-article-header__image',
+        INJECTION_ANCHOR: '.pulse-header__actions, .publisher-author-card, .ellipsis-menu, h1.pulse-title'
     }
 };
 
@@ -238,11 +238,21 @@ function createButtons() {
     } else if (platform === 'linkedin') {
         const anchor = document.querySelector(CONFIG.linkedin.INJECTION_ANCHOR);
         if (anchor) {
-            anchor.style.position = 'relative';
-            container.style.position = 'absolute';
-            container.style.right = '0';
-            container.style.top = '0';
-            anchor.appendChild(container);
+            // Check if it's the ellipsis menu or pulse-header-actions
+            if (anchor.classList.contains('pulse-header__actions') || anchor.classList.contains('ellipsis-menu') || anchor.classList.contains('publisher-author-card')) {
+                anchor.prepend(container);
+            } else {
+                // Fallback to absolute positioning on title
+                anchor.style.position = 'relative';
+                container.style.position = 'absolute';
+                container.style.right = '0';
+                container.style.top = '0';
+                anchor.appendChild(container);
+            }
+        } else {
+            // Last resort: find any H1 and try to inject near it
+            const h1 = document.querySelector('h1');
+            if (h1) h1.parentElement.appendChild(container);
         }
     }
 }
