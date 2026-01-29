@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "X Article PDF/Markdown Downloader",
+  "version": "1.0",
+  "description": "Download X Articles as PDF or Markdown with one click.",
+  "permissions": [
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://x.com/*",
+    "https://pbs.twimg.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*"
+      ],
+      "js": [
+        "lib/jspdf.umd.min.js",
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ]
+    }
+  ],
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

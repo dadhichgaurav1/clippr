@@ -1,0 +1,86 @@
+/* Refined Styles for X Article PDF/Markdown Downloader */
+
+.x-article-download-container {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Article Page: Extreme right fixed bar */
+.x-page-article-container {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  background: rgba(128, 128, 128, 0.1);
+  padding: 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Feed: End of action bar */
+.x-feed-article-btn {
+  margin-left: auto !important;
+  order: 99;
+  /* Put it at the very end */
+}
+
+.x-article-download-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  border-radius: 6px;
+  opacity: 0.6;
+}
+
+.x-article-download-btn:hover {
+  background-color: rgba(128, 128, 128, 0.2);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Icon visibility */
+.x-article-download-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+}
+
+/* Dark/Light mode color inheritance */
+[data-testid="tweet"] .x-article-download-btn,
+.x-page-article-container .x-article-download-btn {
+  color: rgb(15, 20, 25);
+  /* Default Light Mode */
+}
+
+@media (prefers-color-scheme: dark) {
+
+  [data-testid="tweet"] .x-article-download-btn,
+  .x-page-article-container .x-article-download-btn {
+    color: rgb(247, 249, 249);
+    /* Dark Mode */
+  }
+}
+
+/* Force color based on X's body class if possible */
+body[style*="background-color: rgb(0, 0, 0)"] .x-article-download-btn,
+body[style*="background-color: rgb(21, 32, 43)"] .x-article-download-btn {
+  color: rgb(247, 249, 249) !important;
+}
+
+body[style*="background-color: rgb(255, 255, 255)"] .x-article-download-btn {
+  color: rgb(15, 20, 25) !important;
+}
