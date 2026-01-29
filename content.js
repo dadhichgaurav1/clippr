@@ -14,8 +14,8 @@ const CONFIG = {
     },
     linkedin: {
         TITLE: 'h1.pulse-title, h1.main-title, .reader-article-header__title',
-        BODY_CONTENT: '.article-main-card__content, article section, .main-article, .reader-article-content',
-        COVER_IMAGE: '.article-main-card__image-container img, .cover-img, img[alt="Cover image"], .reader-article-header__image',
+        BODY_CONTENT: 'div[data-test-id="article-content-blocks"], .article-main__content, article.article-main',
+        COVER_IMAGE: 'article.article-main figure img, .article-main-card__image-container img, .cover-img',
         INJECTION_ANCHOR: '.pulse-header__actions, .publisher-author-card, .ellipsis-menu, h1.pulse-title'
     }
 };
@@ -102,7 +102,13 @@ async function extractArticleData() {
     } else if (platform === 'linkedin') {
         title = document.querySelector(CONFIG.linkedin.TITLE)?.innerText || document.title.split(' | ')[0] || "LinkedIn-Article";
         const coverImg = document.querySelector(CONFIG.linkedin.COVER_IMAGE)?.src;
-        const contentContainer = document.querySelector(CONFIG.linkedin.BODY_CONTENT);
+
+        // Try the specific content blocks container first
+        let contentContainer = document.querySelector('div[data-test-id="article-content-blocks"]');
+        // Fallback to article.article-main if not found
+        if (!contentContainer) {
+            contentContainer = document.querySelector('article.article-main');
+        }
 
         markdown = `# ${title}\n\n`;
         if (coverImg) {
@@ -111,17 +117,33 @@ async function extractArticleData() {
         }
 
         if (contentContainer) {
-            const elements = Array.from(contentContainer.querySelectorAll('p, h2, h3, li, img'));
+            // Select all text-bearing elements including blockquotes
+            const elements = Array.from(contentContainer.querySelectorAll('p, h2, h3, h4, li, blockquote, figcaption'));
             for (const el of elements) {
-                if (el.tagName === 'P' || el.tagName.startsWith('H') || el.tagName === 'LI') {
-                    const text = el.innerText.trim();
-                    if (text) {
-                        markdown += (el.tagName === 'LI' ? `- ${text}` : text) + '\n\n';
-                        bodyData.push({ type: 'text', content: text });
+                // Get text directly from element, handling nested spans
+                const text = el.innerText?.trim();
+                if (text && text.length > 0) {
+                    // Format based on tag type
+                    if (el.tagName === 'BLOCKQUOTE') {
+                        markdown += `> ${text}\n\n`;
+                    } else if (el.tagName === 'LI') {
+                        markdown += `- ${text}\n`;
+                    } else if (el.tagName.startsWith('H')) {
+                        const level = el.tagName.charAt(1);
+                        markdown += `${'#'.repeat(parseInt(level) + 1)} ${text}\n\n`;
+                    } else {
+                        markdown += `${text}\n\n`;
                     }
-                } else if (el.tagName === 'IMG' && el.src) {
-                    markdown += `![Image](${el.src})\n\n`;
-                    bodyData.push({ type: 'image', src: el.src });
+                    bodyData.push({ type: 'text', content: text });
+                }
+            }
+
+            // Also get inline images
+            const images = Array.from(contentContainer.querySelectorAll('img:not([aria-hidden="true"])')).filter(img => img.src && !img.src.includes('data:'));
+            for (const img of images) {
+                if (img.src !== coverImg) {
+                    markdown += `![Image](${img.src})\n\n`;
+                    bodyData.push({ type: 'image', src: img.src });
                 }
             }
         }
