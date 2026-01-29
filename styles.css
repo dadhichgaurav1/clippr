@@ -1,87 +1,74 @@
-/* Refined Styles for X Article PDF/Markdown Downloader */
+/* Styles for X Article PDF/Markdown buttons */
 
 .x-article-download-container {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  z-index: 9999;
-}
-
-/* Article Page: Extreme right fixed bar */
-.x-page-article-container {
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  flex-direction: column;
-  background: rgba(128, 128, 128, 0.1);
-  padding: 8px;
-  border-radius: 12px;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(128, 128, 128, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Feed: Inline with action bar items */
-.x-feed-article-btn {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  margin-left: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
 .x-article-download-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-  border-radius: 6px;
-  opacity: 0.6;
+    background-color: rgba(239, 243, 244, 1);
+    border: 1px solid rgba(207, 217, 222, 1);
+    color: rgb(15, 20, 25);
+    border-radius: 9999px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .x-article-download-btn:hover {
-  background-color: rgba(128, 128, 128, 0.2);
-  opacity: 1;
-  transform: scale(1.1);
+    background-color: rgba(215, 219, 220, 1);
 }
 
-/* Icon visibility */
 .x-article-download-btn svg {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  fill: none;
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
 }
 
-/* Dark/Light mode color inheritance */
-[data-testid="tweet"] .x-article-download-btn,
-.x-page-article-container .x-article-download-btn {
-  color: rgb(15, 20, 25);
-  /* Default Light Mode */
+/* Tooltip on hover */
+.x-article-download-btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
 }
 
+.x-article-download-btn:hover::after {
+    opacity: 1;
+}
+
+/* For buttons injected into the tweet action bar */
+.x-feed-article-btn {
+    margin-left: 12px;
+    padding: 0;
+}
+
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
+    .x-article-download-btn {
+        background-color: rgb(15, 20, 25);
+        border-color: rgb(83, 100, 113);
+        color: rgb(239, 243, 244);
+    }
 
-  [data-testid="tweet"] .x-article-download-btn,
-  .x-page-article-container .x-article-download-btn {
-    color: rgb(247, 249, 249);
-    /* Dark Mode */
-  }
-}
-
-/* Force color based on X's body class if possible */
-body[style*="background-color: rgb(0, 0, 0)"] .x-article-download-btn,
-body[style*="background-color: rgb(21, 32, 43)"] .x-article-download-btn {
-  color: rgb(247, 249, 249) !important;
-}
-
-body[style*="background-color: rgb(255, 255, 255)"] .x-article-download-btn {
-  color: rgb(15, 20, 25) !important;
+    .x-article-download-btn:hover {
+        background-color: rgba(239, 243, 244, 0.1);
+    }
 }

@@ -7,8 +7,7 @@
     "downloads"
   ],
   "host_permissions": [
-    "https://x.com/*",
-    "https://pbs.twimg.com/*"
+    "https://x.com/*"
   ],
   "content_scripts": [
     {
