@@ -1,6 +1,6 @@
-// X Article PDF/Markdown Downloader Content Script
+// Clippr - Article to PDF/Markdown Content Script
 
-console.log("X Article Downloader v2 loaded.");
+console.log("Clippr loaded on:", window.location.host);
 
 // --- Constants & Selectors ---
 const CONFIG = {
@@ -102,13 +102,25 @@ async function extractArticleData() {
     } else if (platform === 'linkedin') {
         title = document.querySelector(CONFIG.linkedin.TITLE)?.innerText || document.title.split(' | ')[0] || "LinkedIn-Article";
         const coverImg = document.querySelector(CONFIG.linkedin.COVER_IMAGE)?.src;
+        console.log("LinkedIn extraction starting. Title:", title);
 
-        // Try the specific content blocks container first
+        // Try multiple container selectors
         let contentContainer = document.querySelector('div[data-test-id="article-content-blocks"]');
-        // Fallback to article.article-main if not found
+        console.log("Selector 1 (data-test-id):", contentContainer ? "FOUND" : "NOT FOUND");
+
         if (!contentContainer) {
             contentContainer = document.querySelector('article.article-main');
+            console.log("Selector 2 (article.article-main):", contentContainer ? "FOUND" : "NOT FOUND");
         }
+
+        if (!contentContainer) {
+            contentContainer = document.querySelector('article');
+            console.log("Selector 3 (article):", contentContainer ? "FOUND" : "NOT FOUND");
+        }
+
+        // Debug: List what's on the page
+        console.log("DEBUG - All articles on page:", document.querySelectorAll('article').length);
+        console.log("DEBUG - All P tags on page:", document.querySelectorAll('p').length);
 
         markdown = `# ${title}\n\n`;
         if (coverImg) {
@@ -121,6 +133,12 @@ async function extractArticleData() {
             // Select all text-bearing elements including blockquotes
             const elements = Array.from(contentContainer.querySelectorAll('p, h2, h3, h4, li, blockquote, figcaption'));
             console.log("LinkedIn: Found", elements.length, "text elements");
+
+            // Debug: show first element if exists
+            if (elements.length > 0) {
+                console.log("First element:", elements[0].tagName, elements[0].innerText?.substring(0, 50));
+            }
+
             for (const el of elements) {
                 // Get text directly from element, handling nested spans
                 const text = el.innerText?.trim();
